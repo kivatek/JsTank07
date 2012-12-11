@@ -23,16 +23,14 @@ var Tank = Class.create(Sprite, {
 	updatePlayer: function() {
 		if (this.isMoving) {
 			this.moveBy(this.vx, this.vy);
-			this.animCheck++;
-			if ((this.animCheck % 2) == 1) {
-				this.pattern++;
-				this.pattern %= 4;
-			}
+			// １ブロック分動いたかどうかを確認する。
 			if ((this.vx && this.x % 32 == 0) || (this.vy && this.y % 32 == 0)) {
 				this.isMoving = false;
 				this.pattern = 1;
+			} else {
+				// ４方向、３パターンのうちどのフレームを使うかを計算する。
+				this.pattern = (this.pattern + 1) % 3;
 			}
-			// ４方向、３パターンのうちどのフレームを使うかを計算する。
 			this.frame = this.direction * 6 + this.pattern;
 		} else {
 			this.vx = this.vy = 0;
@@ -69,8 +67,12 @@ var Tank = Class.create(Sprite, {
 				var y = this.y + (this.vy ? this.vy / Math.abs(this.vy) * 32 : 0);
 				if (0 <= x && x < SCREEN_WIDTH && !background.hitTest(x, y)) {
 					this.isMoving = true;
-					this.animCheck = 0;	// アニメーションカウンタは必要に応じてリセット。
 					arguments.callee.call(this);
+				} else {
+					// 移動できない場合はその場で向きを変える。
+					// 実はJsTank06までは見た目の向きは変わっていなかったが、変数の値は変更になっていた。
+					// そのため、戦車の見た目の向きとは違う方向に弾が撃ち出されていた。
+					this.frame = this.direction * 6 + this.pattern;
 				}
 			}
 			if (this.vy) {
@@ -78,8 +80,12 @@ var Tank = Class.create(Sprite, {
 				var y = this.y + (this.vy ? this.vy / Math.abs(this.vy) * 32 : 0);
 				if (0 <=y && y < SCREEN_HEIGHT && !background.hitTest(x, y)) {
 					this.isMoving = true;
-					this.animCheck = 0;	// アニメーションカウンタは必要に応じてリセット。
 					arguments.callee.call(this);
+				} else {
+					// 移動できない場合はその場で向きを変える。
+					// 実はJsTank06までは見た目の向きは変わっていなかったが、変数の値は変更になっていた。
+					// そのため、戦車の見た目の向きとは違う方向に弾が撃ち出されていた。
+					this.frame = this.direction * 6 + this.pattern;
 				}
 			}
 		}
@@ -213,7 +219,6 @@ window.onload = function() {
 		myTank.isMoving = false;
 		// 向き 0:下、1:左、2:右、3:上
 		myTank.direction = 0;
-		myTank.animCheck = 0;	// アニメーションパターンの切替えタイミングをコントロールするために使用する。
 		myTank.pattern = 0;
 		
 		// デザートカラーの戦車（敵用）のスプライトを用意。
