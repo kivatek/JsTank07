@@ -53,7 +53,7 @@ var Tank = Class.create(Sprite, {
 					this.cooldown = true;
 					var shot = new Shot(this.x+((32-16)/2), this.y+((32-16)/2), TANKTYPE_PLAYER, this.direction);
 					game.currentScene.addChild(shot);
-					// 弾は間隔を開けないと撃てないよう修正。
+					// 弾は間隔を空けないと撃てないよう修正。
 					var timerTarget = this;
 					setTimeout( function(){
 						timerTarget.cooldown = false;
