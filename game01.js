@@ -1,7 +1,9 @@
 enchant();
 
+// 画面サイズ
 var SCREEN_WIDTH	= 320;
 var SCREEN_HEIGHT	= 320;
+// 戦車の種別
 var TANKTYPE_PLAYER	= 0;
 var TANKTYPE_ENEMY	= 1;
 
@@ -14,52 +16,60 @@ var Tank = Class.create(Sprite, {
 		this.isMoving = false;
 		this.cooldown = false;
 		if (type == TANKTYPE_PLAYER) {
-			// 緑色の戦車
+			// 緑色の戦車を表すフレーム番号
 			this.frame = direction * 6;
 			// キー入力の確認や戦車の移動プログラムを登録する。
 			this.addEventListener('enterframe', this.updatePlayer);
 		} else {
-			// デザートカラーの戦車
+			// デザートカラーの戦車を表すフレーム番号
 			this.frame = direction * 6 + 3;
 		}
 	},
 	updatePlayer: function() {
+		// 自分の戦車の情報を更新する関数
 		if (this.isMoving) {
-			this.moveBy(this.vx, this.vy);
+			// ｘ、ｙ座標を更新する。
+			this.moveBy(this.vx * 16, this.vy * 16);
 			// １ブロック分動いたかどうかを確認する。
 			if ((this.vx && this.x % 32 == 0) || (this.vy && this.y % 32 == 0)) {
 				this.isMoving = false;
-				this.pattern = 1;
 			} else {
 				// ４方向、３パターンのうちどのフレームを使うかを計算する。
 				this.pattern = (this.pattern + 1) % 3;
 			}
 			this.frame = this.direction * 6 + this.pattern;
 		} else {
+			// 移動方向を表す情報をクリアする。
 			this.vx = this.vy = 0;
 
 			// 入力チェック前の向きを覚えておく。
 			var prevDirection = this.direction;
 
+			// キーの入力状態をチェックする。
+			// 入力状態に合わせて戦車の向き情報を変更する。
 			// 向き 0:下、1:左、2:右、3:上
 			if (game.input.left) {
 				this.direction = 1;
-				this.vx = -16;
+				this.vx = -1;
 			} else if (game.input.right) {
 				this.direction = 2;
-				this.vx = 16;
+				this.vx = 1;
 			} else if (game.input.up) {
 				this.direction = 3;
-				this.vy = -16;
+				this.vy = -1;
 			} else if (game.input.down) {
 				this.direction = 0;
-				this.vy = 16;
+				this.vy = 1;
 			} else if (game.input.a) {
 				if (this.cooldown == false) {
 					this.cooldown = true;
+					// 弾を撃つ。つまり弾スプライトを発生する。
+					// スプライトのサイズが違うため、戦車の座標をそのまま使うことができない。
+					// そのため弾の座標を特別に計算する。
 					var shot = new Shot(this.x+((32-16)/2), this.y+((32-16)/2), TANKTYPE_PLAYER, this.direction);
 					game.currentScene.addChild(shot);
 					// 弾は間隔を空けないと撃てないよう修正。
+					// 冷却時間つまりcooldownがtrueの間は次の弾を撃つことは出来ないようにする。
 					var timerTarget = this;
 					setTimeout( function(){
 						timerTarget.cooldown = false;
@@ -75,18 +85,13 @@ var Tank = Class.create(Sprite, {
 				this.frame = this.direction * 6 + this.pattern;
 			}
 
-			if (this.vx) {
-				var x = this.x + (this.vx ? this.vx / Math.abs(this.vx) * 32 : 0);
-				var y = this.y + (this.vy ? this.vy / Math.abs(this.vy) * 32 : 0);
-				if (0 <= x && x < SCREEN_WIDTH && !background.hitTest(x, y)) {
-					this.isMoving = true;
-					arguments.callee.call(this);
-				}
-			}
-			if (this.vy) {
-				var x = this.x + (this.vx ? this.vx / Math.abs(this.vx) * 32 : 0);
-				var y = this.y + (this.vy ? this.vy / Math.abs(this.vy) * 32 : 0);
-				if (0 <=y && y < SCREEN_HEIGHT && !background.hitTest(x, y)) {
+			if (this.vx || this.vy) {
+				// 移動処理を行った後の座標を仮計算。
+				// そしてその座標が画面内であるかどうか、壁があるかどうかを調べる。
+				var x = this.x + this.vx * 32;
+				var y = this.y + this.vy * 32;
+				if (0 <= x && x < SCREEN_WIDTH && 0 <= y && y < SCREEN_HEIGHT && !background.hitTest(x, y)) {
+					// 一ブロック分移動した後の座標がステージの範囲内であれば移動処理を開始する。
 					this.isMoving = true;
 					arguments.callee.call(this);
 				}
@@ -101,7 +106,7 @@ var Shot = Class.create(Sprite, {
 		this.image = game.assets['js/images/icon0.png'];
 		this.x = x;
 		this.y = y;
-		// 使用する画像パターンの先頭のフレーム番号をセット。
+		// 使用する弾画像のフレーム番号をセット。
 		var topFrame = 0;
 		if (type == TANKTYPE_PLAYER) {
 			topFrame = 48;
@@ -113,16 +118,16 @@ var Shot = Class.create(Sprite, {
 		this.vx = this.vy = 0;
 		if (direction == 0) {
 			this.frame = topFrame + 4;
-			this.vy = 8;
+			this.vy = 1;
 		} else if (direction == 1) {
 			this.frame = topFrame + 2;
-			this.vx = -8;
+			this.vx = -1;
 		} else if (direction == 2) {
 			this.frame = topFrame + 6;
-			this.vx = 8;
+			this.vx = 1;
 		} else if (direction == 3) {
 			this.frame = topFrame;
-			this.vy = -8;
+			this.vy = -1;
 		}
 		this.addEventListener('enterframe', function() {
 			// スクリーンの端かまたは何かに当たるまで飛んでいく。
@@ -136,25 +141,17 @@ var Shot = Class.create(Sprite, {
 		});
 	},
 	move: function() {
-		var x = this.x + this.vx;
-		var y = this.y + this.vy;
-		if (this.vx != 0) {
-			if (0 <= x && x < SCREEN_WIDTH) {
-				this.moveBy(this.vx, this.vy);
-			} else {
-				game.currentScene.removeChild(this);
-			}
-		}
-		if (this.vy != 0) {
-			if (0 <= y && y < SCREEN_HEIGHT) {
-				this.moveBy(this.vx, this.vy);
-			} else {
-				game.currentScene.removeChild(this);
-			}
-		}
+		this.moveBy(this.vx * 8, this.vy * 8);
 	},
 	checkCollision: function() {
 		// collision: 「コリジョン」とはモノとモノとの衝突といった意味です。
+		if (this.x < 0 || SCREEN_WIDTH <= this.x || this.y < 0 || SCREEN_HEIGHT <= this.y) {
+			// 現在座標がすでに画面外であればステージから削除する。
+			// この時点でこの弾スプライトはゲーム内に存在しなくなる。
+			game.currentScene.removeChild(this);
+			return true;
+		}
+		
 		var i;
 		for (i = 0; i < enemies.length; i++) {
 			if (this.intersect(enemies[i])) {
